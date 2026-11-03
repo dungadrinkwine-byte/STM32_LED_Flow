@@ -32,7 +32,10 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-
+#define LED_NUM               3U
+#define LED_FLOW_INTERVAL_MS  500U
+#define LED_LEVEL_ON          GPIO_PIN_SET
+#define LED_LEVEL_OFF         GPIO_PIN_RESET
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -43,13 +46,29 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
+typedef struct
+{
+  GPIO_TypeDef *port;
+  uint16_t      pin;
+} LedDef_t;
 
+static const LedDef_t s_ledTable[LED_NUM] =
+{
+  { LED0_GPIO_Port, LED0_Pin },
+  { LED1_GPIO_Port, LED1_Pin },
+  { LED2_GPIO_Port, LED2_Pin },
+};
+
+static uint32_t s_lastTick = 0U;
+static uint8_t  s_step     = 0U;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 /* USER CODE BEGIN PFP */
-
+static void Led_Write(uint8_t idx, uint8_t on);
+static void LedFlow_Init(void);
+static void LedFlow_Task(void);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -87,28 +106,17 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   /* USER CODE BEGIN 2 */
-
+  LedFlow_Init();
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-    HAL_GPIO_WritePin(LED0_GPIO_Port, LED0_Pin, GPIO_PIN_SET);
-    HAL_Delay(500);
-    HAL_GPIO_WritePin(LED0_GPIO_Port, LED0_Pin, GPIO_PIN_RESET);
-
-    HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_SET);
-    HAL_Delay(500);
-    HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_RESET);
-
-    HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, GPIO_PIN_SET);
-    HAL_Delay(500);
-    HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, GPIO_PIN_RESET);
-
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+    LedFlow_Task();
   }
   /* USER CODE END 3 */
 }
@@ -153,7 +161,40 @@ void SystemClock_Config(void)
 }
 
 /* USER CODE BEGIN 4 */
+static void Led_Write(uint8_t idx, uint8_t on)
+{
+  GPIO_PinState level = (on != 0U) ? LED_LEVEL_ON : LED_LEVEL_OFF;
+  HAL_GPIO_WritePin(s_ledTable[idx].port, s_ledTable[idx].pin, level);
+}
 
+static void LedFlow_Init(void)
+{
+  uint8_t i;
+
+  for (i = 0U; i < LED_NUM; i++)
+  {
+    Led_Write(i, 0U);
+  }
+
+  s_step     = 0U;
+  Led_Write(s_step, 1U);
+  s_lastTick = HAL_GetTick();
+}
+
+static void LedFlow_Task(void)
+{
+  uint32_t now = HAL_GetTick();
+
+  if ((now - s_lastTick) < LED_FLOW_INTERVAL_MS)
+  {
+    return;
+  }
+  s_lastTick = now;
+
+  Led_Write(s_step, 0U);
+  s_step = (uint8_t)((s_step + 1U) % LED_NUM);
+  Led_Write(s_step, 1U);
+}
 /* USER CODE END 4 */
 
 /**
