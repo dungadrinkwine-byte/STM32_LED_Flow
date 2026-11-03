@@ -108,3 +108,5 @@ while (1)
 | 升级版（非阻塞延时） | [video/led_flow_nonblocking_demo.mp4](video/led_flow_nonblocking_demo.mp4) |
 
 基础版的完整代码保留在 [基础版参考/main_basic.c](基础版参考/main_basic.c)，不参与当前工程编译。
+
+也可以直接切换到 [basic 分支](https://github.com/dungadrinkwine-byte/STM32_LED_Flow/tree/basic)，那里的 `Core/Src/main.c` 就是可直接编译烧录的基础版工程。
